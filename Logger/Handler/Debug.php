@@ -17,22 +17,22 @@ class Debug extends \Magento\Framework\Logger\Handler\Debug
     private $dirCreated;
 
     /**
-     * @param array $record
+     * @param \Monolog\LogRecord $record
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function write(array $record): void
+    protected function write(\Monolog\LogRecord $record): void
     {
-        if (!isset($record['context']['is_api']) || !$record['context']['is_api']) {
+        if (!isset($record->context['is_api']) || !$record->context['is_api']) {
             parent::write($record);
             return;
         }
-        $result = preg_match('/\/V1\/([^?]*)/', $record['context']['request']['uri'], $matches);
+        $result = preg_match('/\/V1\/([^?]*)/', $record->context['request']['uri'], $matches);
         $url = sprintf(
             '%s/var/log/webapi_%s/%s/%s.log',
             BP,
             'rest',
             $result && count($matches) && $matches[1] ? trim($matches[1], '/') : 'default',
-            $record['datetime']->format('Ymd_His')
+            $record->datetime->format('Ymd_His')
         );
 
         $logDir = $this->filesystem->getParentDirectory($url);
@@ -66,17 +66,17 @@ class Debug extends \Magento\Framework\Logger\Handler\Debug
             flock($stream, LOCK_EX);
         }
 
-        $request = $record['context']['request'];
+        $request = $record->context['request'];
         $data = '';
         $data .= sprintf("%s %s HTTP %s\n\n", $request['method'], $request['uri'], $request['version']);
-        foreach ($record['context']['request']['headers'] as $key => $value) {
+        foreach ($record->context['request']['headers'] as $key => $value) {
             $data .= sprintf("%s: %s\n", $key, $value);
         }
         $data .= sprintf("\n%s\n\n", $request['body']);
-        foreach ($record['context']['response']['headers'] as $key => $value) {
+        foreach ($record->context['response']['headers'] as $key => $value) {
             $data .= sprintf("%s: %s\n", $key, $value);
         }
-        $data .= sprintf("\n%s\n", $record['context']['response']['body']);
+        $data .= sprintf("\n%s\n", $record->context['response']['body']);
 
         fwrite($stream, $data);
 
